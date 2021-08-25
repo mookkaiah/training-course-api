@@ -6,9 +6,9 @@ def version
 def serviceName
 
 pipeline {
-	agent { label 'DSLAVE2' }
+	agent { label 'DOTNET' }
 	environment	{
-		DOTNET_ROOT = /dei fent/dotnet-2.2.105/dotnet!
+		DOTNET_ROOT = '/dcifent/dotnet-2.2.105/dotnet'
 		DOTNET_CLI_TELEMETRY_OPTOUT = true
 		DOTNET_SKIP_FIRST_TIME_EXPERIENCE = true
 		DOTNET_SYSTEM_GLOBALIZATION_INVARIANT = true
@@ -16,8 +16,8 @@ pipeline {
 		PATH = "${PATH}:/dcifent/dotnet-sonarscanner"
 	}
 	options {
-		ansiColor('xterm')
-		durabilityHint PERFORMANCE_OPTIMIZED
+		// ansiColor('xterm')
+		durabilityHint 'PERFORMANCE_OPTIMIZED'
 		timestamps ()
 	}
 	stages {
@@ -27,15 +27,14 @@ pipeline {
 					version = "${env.GIT_COMMIT[0..6]}-${env.BUILD_NUMBER}"
 					serviceName = env.GIT_URL.replaceFirst(/^.*\/([^\/]+?).git$/, '$1')
 				}
-				addshortText text: 'APP_VERSION: + version
+				addShortText text: 'APP_VERSION: ' + version
 			}
 		}
 		
 		stage('Build dotnet projects') {
 			steps {
 				script {
-					build('OPEEngine')
-					build('PricingWorker')
+					build('CourseApi')
 				}
 			}
 		}
@@ -45,7 +44,7 @@ pipeline {
 			steps {
 				script {
 					evolvePipeline([
-						SOURCE DIR	: env.WORKSPACE,
+						SOURCE_DIR	: env.WORKSPACE,
 						BRANCH 		: env.GIT_BRANCH.toLowerCase(),
 						PORTFOLIO 	: PROJECT.toLowerCase(),
 						APP			: APPLICATION.toLowerCase(),
@@ -57,7 +56,7 @@ pipeline {
 		
 		stage('Sonar Scan') {
 			when { anyOf { branch 'uat'; branch 'uat1'; branch 'uat2'; branch 'uat3'; branch 'uat4'; branch 'uat5' } }
-				stepe {
+				steps {
 					script {
 						withSonarqubeEnv('Sonar-3.2') {
 							sh """
@@ -66,7 +65,7 @@ pipeline {
 									/v:${env.GTT_COMMIT} \
 									/d:sonar.branch.name=${GIT_BRANCH} \
 									/d:sonar.scanner.metadataFilePath=${env.WORKSPACE}/repost-task.txt
-								dotnet build QPEEngine.sln
+								dotnet build CourseApi.sln
 								dotnet-sonarscanner end
 							"""
 						}
@@ -84,7 +83,7 @@ pipeline {
 		stage ('Fortity Scan') {
 			when { anyOf { branch 'uat'; branch 'uat1'; branch 'uat2'; branch 'uat3'; branch 'uat4'; branch 'uat5' } }
 			agent { label 'W01CDCTFUNKS2A_Slave' }
-			environment { Path = "C:\Windows\syatem32;C:\Windowa;D:\\tools\\HP_Fortify\\Fortify_SCA_and_Apps_19.1.0\\bin' }
+			environment { Path = 'C:\\Windows\\syatem32;C:\\Windowa;D:\\tools\\HP_Fortify\\Fortify_SCA_and_Apps_19.1.0\\bin' }
 				steps {
 					script {
 						bat """
@@ -136,11 +135,11 @@ pipeline {
 						nexusArtifactUploader([
 							credentialsId	: 'nexusArtifactUploader',
 							groupId 		: APPLICATION,
-							nexua:1 		: 'nexuscimgmt.sgb.dbs.com:8443/nexus',
-							nexusVersion 	: 'nexus3'
+							nexusUrl 		: 'nexuscimgmt.sgb.dbs.com:8443/nexus',
+							nexusVersion 	: 'nexus3',
 							protocol 		: 'https',
 							repository 		: PROJECT,
-							version 		: version.
+							version 		: version,
 							artifacta 		: [[artifactId: 'artifacts',
 												file : 'artifacts.zip',
 												type : 'zip']]
@@ -149,7 +148,7 @@ pipeline {
 				}
 			}
 			
-		stage('JIRA) {
+		stage('JIRA') {
 			when { anyOf { branch 'uat'; branch 'uat1'; branch 'uat2'; branch 'uat3'; branch 'uat4'; branch 'uat5' } }
 				steps {
 					script {
@@ -158,7 +157,7 @@ pipeline {
 							
 							if (searchResults.data.issues.size() < 1) {
 								createjiraticket([
-									'projectKey'		: PROJECT
+									'projectKey'		: PROJECT,
 									'branch'			: 'master',
 									'commitID'			: env.GIT_COMMIT,
 									'summary'			: APPLICATTON,
@@ -166,9 +165,9 @@ pipeline {
 									'APP_VERSTON'		: version,
 									'APPLICATION'		: APPLICATION,
 									'Repo URL'			: env.GIT_URL,
-									'Nexus Artifact ID' : 'artifacts'
-									'Nexus Group ID'	: APPLTCATION
-									'Nexus Reno Name'	:: PROJECT,
+									'Nexus Artifact ID' : 'artifacts',
+									'Nexus Group ID'	: APPLTCATION,
+									'Nexus Repo Name'	: PROJECT,
 								])
 							} else {
 								def key = searchResults.data.issues[0].key
@@ -195,15 +194,15 @@ pipeline {
 
 def build (String project) {
 	sh """
-		dotnet publish ${project) -c Release -o $(env.WORKSPACE}/${project}-build
+		dotnet publish ${project} -c Release -o ${env.WORKSPACE}/${project}-build
 		
 		cp ${env.WORKSPACE}/deployment/${project}/* ${env.WORKSPACE}/${project}-build
 		
 		if [ ${project} == PricingWorker ]; then
-			mkdir ${env.WORKSPACE]/${project)-build/lib
-			cp LinuxLibs/* ${env.WORKSPACE}/$(project)-build/lib
+			mkdir ${env.WORKSPACE}/${project}-build/lib
+			cp LinuxLibs/* ${env.WORKSPACE}/${project}-build/lib
 		fi
 		
 		tar -vcxf ${env.WORKSPACE}/${project}.tar.gz -C ${env.WORKSPACE}/${project}-build .
 	"""
-	
+}
