@@ -9,6 +9,8 @@ pipeline {
 	// agent { label 'DOTNET' }
 	agent any
 	environment	{
+		dotnet = 'C:\\Program Files (x86)\\dotnet\\'
+
 		DOTNET_ROOT = '/dcifent/dotnet-2.2.105/dotnet'
 		DOTNET_CLI_TELEMETRY_OPTOUT = true
 		DOTNET_SKIP_FIRST_TIME_EXPERIENCE = true
@@ -27,11 +29,42 @@ pipeline {
 				script {
 					version = "${env.GIT_COMMIT[0..6]}-${env.BUILD_NUMBER}"
 					serviceName = env.GIT_URL.replaceFirst(/^.*\/([^\/]+?).git$/, '$1')
+
+					echo 'version : ' + version
+					echo 'serviceName : ' + serviceName
 				}
 				// addShortText text: 'APP_VERSION: ' + version
 			}
 		}
+		stage('Checkout') {
+            steps {
+				script {
+					echo 'URL : ' +  env.GIT_URL
+					echo 'branch : ' +  env.GIT_BRANCH.toLowerCase()
+					git credentialsId: 'checkoutuser', url: env.GIT_URL, branch: env.GIT_BRANCH.toLowerCase()
+					echo env.GIT_BRANCH.toLowerCase() + ' : Dev-branch- successfully checked out'
+				}
+            }
+        }
+	    
+		stage('Restore packages') {
+				steps{
+			script {
+				bat "dotnet restore mathservice.csproj"
+				echo env.GIT_BRANCH.toLowerCase() + '-branch- successfully restored' 
+				}
+			}
+		}
 		
+		stage('Clean') {
+				steps{
+			script {
+				bat "dotnet clean mathservice.csproj"
+				echo env.GIT_BRANCH.toLowerCase() + '-branch- successfully get cleaned' 
+				}
+			}
+		}
+
 		stage('Build dotnet projects') {
 			steps {
 				script {
@@ -194,16 +227,23 @@ pipeline {
 
 
 def build (String project) {
-	sh """
+	echo "dotnet publish ${project}.csproj -c Release -o ${env.WORKSPACE}/${project}-build"
+	
+	echo "${env.WORKSPACE}/deployment/${project}/"
+	echo "${env.WORKSPACE}/${project}-build"
+
+	powershell """
+
 		dotnet publish ${project} -c Release -o ${env.WORKSPACE}/${project}-build
 		
 		cp ${env.WORKSPACE}/deployment/${project}/* ${env.WORKSPACE}/${project}-build
 		
-		if [ ${project} == PricingWorker ]; then
-			mkdir ${env.WORKSPACE}/${project}-build/lib
-			cp LinuxLibs/* ${env.WORKSPACE}/${project}-build/lib
-		fi
-		
-		tar -vcxf ${env.WORKSPACE}/${project}.tar.gz -C ${env.WORKSPACE}/${project}-build .
+		// if [ ${project} == PricingWorker ]; then
+		// 	mkdir ${env.WORKSPACE}/${project}-build/lib
+		// 	cp LinuxLibs/* ${env.WORKSPACE}/${project}-build/lib
+		// fi
+		mkdir ${env.WORKSPACE}/build-output/${project}
+
+		tar -vcxf ${env.WORKSPACE}/build-output/${project}/${project}.tar.gz -C ${env.WORKSPACE}/${project}-build .
 	"""
 }
