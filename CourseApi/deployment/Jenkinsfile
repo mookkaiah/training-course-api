@@ -6,8 +6,8 @@ def version
 def serviceName
 
 pipeline {
-	// agent { label 'DOTNET' }
-	agent any
+	agent { label 'DOTNET' }
+	
 	environment	{
 		dotnet = 'C:\\Program Files (x86)\\dotnet\\'
 
