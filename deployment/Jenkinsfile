@@ -1,238 +1,80 @@
-#!groovy
+#!/usr/bin/env groovy
 
-def PROJECT = 'training'
-def APPLICATION = 'CourseApi'
 def version
 def serviceName
+def tempVar 
 
 pipeline {
-	agent { label 'DOTNET' }
-	
-	environment	{
+    agent any 
+	environment {
 		dotnet = 'C:\\Program Files (x86)\\dotnet\\'
-
-		// DOTNET_ROOT = '/dcifent/dotnet-2.2.105/dotnet'
-		// DOTNET_CLI_TELEMETRY_OPTOUT = true
-		// DOTNET_SKIP_FIRST_TIME_EXPERIENCE = true
-		// DOTNET_SYSTEM_GLOBALIZATION_INVARIANT = true
-
-		// PATH = "${PATH}:/dcifent/dotnet-sonarscanner"
 	}
-	// options {
-	// 	// ansiColor('xterm')
-	// 	durabilityHint 'PERFORMANCE_OPTIMIZED'
-	// 	timestamps ()
-	// }
-	stages {
-		stage('Initialise') {
-			steps {
-				script {
-					echo env.GIT_BRANCH.toLowerCase() + '-branch- Jenkinsfile practice - Hello world! - triggered by web hooks' 
-					version = "${env.GIT_COMMIT[0..6]}-${env.BUILD_NUMBER}"
-					serviceName = env.GIT_URL.replaceFirst(/^.*\/([^\/]+?).git$/, '$1')
-
-					echo 'version : ' + version
-					echo 'serviceName : ' + serviceName
-				}
-				// addShortText text: 'APP_VERSION: ' + version
-			}
-		}
-		stage('Checkout') {
+	
+    stages {
+	stage('Initialize') {
             steps {
-				script {
-					echo 'URL : ' +  env.GIT_URL
-					echo 'branch : ' +  env.GIT_BRANCH.toLowerCase()
-					git credentialsId: 'checkoutuser', url: env.GIT_URL, branch: env.GIT_BRANCH.toLowerCase()
-					echo env.GIT_BRANCH.toLowerCase() + ' : Dev-branch- successfully checked out'
-				}
+		script {
+
+			echo 'Dev-branch- Jenkinsfile - triggered by web hooks' 
+			version = "${env.GIT_COMMIT[0..6]}-${env.BUILD_NUMBER}"
+			serviceName = env.GIT_URL.replaceFirst(/^.*\/([^\/]+?).git$/, '$1')
+			echo 'version : ' + version
+			echo 'serviceName : ' + serviceName
+		}
+            }
+        }
+		
+	stage('Checkout'){
+            steps {
+		script {
+			echo 'URL : ' +  env.GIT_URL
+			echo 'branch : ' +  env.GIT_BRANCH.toLowerCase()
+			git credentialsId: 'checkoutuser', url: env.GIT_URL, branch: env.GIT_BRANCH.toLowerCase()
+			echo env.GIT_BRANCH.toLowerCase() + ' : Dev-branch- successfully checked out'
+		}
             }
         }
 	    
-		stage('Build dotnet projects') {
-			steps {
-				script {
-					restore_clean_build('CourseApi')
-				}
+	stage('Restore packages'){
+            steps{
+		script {
+			bat "dotnet restore CourseApi.csproj"
+			echo 'Dev-branch- successfully restored' 
 			}
 		}
-
-		// stage('Deploy application via Evolve Pipeline') {
-		// 	when { anyOf { branch 'dev'; branch 'dev1'; branch 'dev2'; branch 'sit'; branch 'sit1'; branch 'sit2'; branch 'uat'; branch 'uat1'; branch 'uat2'; branch 'uat3'; branch 'uat4'; branch 'uat5' } }
-		// 	steps {
-		// 		script {
-		// 			evolvePipeline([
-		// 				SOURCE_DIR	: env.WORKSPACE,
-		// 				BRANCH 		: env.GIT_BRANCH.toLowerCase(),
-		// 				PORTFOLIO 	: PROJECT.toLowerCase(),
-		// 				APP			: APPLICATION.toLowerCase(),
-		// 				TASKS		: 'package upload compile today'
-		// 			])
-		// 		}
-		// 	}
-		// }
-		
-		// stage('Sonar Scan') {
-		// 	when { anyOf { branch 'uat'; branch 'uat1'; branch 'uat2'; branch 'uat3'; branch 'uat4'; branch 'uat5' } }
-		// 		steps {
-		// 			script {
-		// 				withSonarqubeEnv('Sonar-3.2') {
-		// 					sh """
-		// 						dotnet-sonarscanner begin \
-		// 							/k:${PROJECT}_${serviceName} \
-		// 							/v:${env.GTT_COMMIT} \
-		// 							/d:sonar.branch.name=${GIT_BRANCH} \
-		// 							/d:sonar.scanner.metadataFilePath=${env.WORKSPACE}/repost-task.txt
-		// 						dotnet build CourseApi.sln
-		// 						dotnet-sonarscanner end
-		// 					"""
-		// 				}
-
-		// 				updateDotnetSonarMetrics([
-		// 					repourl 	: env.GIT_URL,
-		// 					commitId	: env.GIT_COMMIT,
-		// 					projectKey	: "${Project}_${serviceName}",
-		// 					taskFile	: 'report-task.txt'
-		// 				])
-		// 			}
-		// 		}
-		// 	}
-		
-		// stage ('Fortity Scan') {
-		// 	when { anyOf { branch 'uat'; branch 'uat1'; branch 'uat2'; branch 'uat3'; branch 'uat4'; branch 'uat5' } }
-		// 	agent { label 'W01CDCTFUNKS2A_Slave' }
-		// 	environment { Path = 'C:\\Windows\\syatem32;C:\\Windowa;D:\\tools\\HP_Fortify\\Fortify_SCA_and_Apps_19.1.0\\bin' }
-		// 		steps {
-		// 			script {
-		// 				bat """
-		// 					sourceanalyzer -version
-		// 					sourceanalyzer -Xmx4G -b %BUILD_NUMBER% -clean
-		// 					sourceanalyzer -Xmx4G -b %BUILD_NUMBER% -libdirs **/* **/*
-		// 					cloudsacan -sscurl https://scancentral.corp.dbs.com:8443/ssc ^
-		// 						-ssctoken d4fb65fc-2517-4a87-a115-9145171ed686 ^
-		// 						start ^
-		// 						-upload ^
-		// 						-project ${PROJECT} ^
-		// 						-versionname ${serviceName} ^
-		// 						-uptoken 624ec105-37b3-4766-8247-1001efec1c0b
-		// 						-b %BUILD_NUMBER% ^
-		// 						-filter %WORKSPACE%/filter_fortify.txt ^
-		// 						-scan ^
-		// 						-autoheap ^
-		// 						-build-label %GIT_URL%%GIT_BRANCH%@@%GIT_COMMIT%
-		// 				"""
-		// 			}
-		// 		}
-		// 	}
-			
-
-		// stage('Nexus IQ Scan') {
-		// 	when { anyOf { branch 'uat'; branch 'uat1'; branch 'uat2'; branch 'uat3'; branch 'uat4'; branch 'uat5' } }
-		// 		steps {
-		// 			script {
-		// 				performIQScan ([
-		// 					commitID		: env.GIT_COMMIT,
-		// 					branch			: env.GIT_BRANCH,
-		// 					repourl			: env.GIT_URL,
-		// 					iqProjectName 	: "${PROJECT}_${serviceName}",
-		// 					scantarget		: 'QPEEngine-build, PricingWorker-build',
-		// 					organization	: 'Others',
-		// 					appCategory		: 'Internal-Shared'
-		// 				])
-		// 			}
-		// 		}
-		// 	}
-							
-
-		// stage('upload artifacts to Nexus') {
-		// 	when { anyOf { branch 'uat'; branch 'uat1'; branch 'uat2'; branch 'uat3'; branch 'uat4'; branch 'uat5' } }
-		// 		steps {
-		// 			script {
-		// 				zip dir: '_staging', zipFile: 'artifacts.zip'
-						
-		// 				nexusArtifactUploader([
-		// 					credentialsId	: 'nexusArtifactUploader',
-		// 					groupId 		: APPLICATION,
-		// 					nexusUrl 		: 'nexuscimgmt.sgb.dbs.com:8443/nexus',
-		// 					nexusVersion 	: 'nexus3',
-		// 					protocol 		: 'https',
-		// 					repository 		: PROJECT,
-		// 					version 		: version,
-		// 					artifacta 		: [[artifactId: 'artifacts',
-		// 										file : 'artifacts.zip',
-		// 										type : 'zip']]
-		// 				])
-		// 			}
-		// 		}
-		// 	}
-			
-		// stage('JIRA') {
-		// 	when { anyOf { branch 'uat'; branch 'uat1'; branch 'uat2'; branch 'uat3'; branch 'uat4'; branch 'uat5' } }
-		// 		steps {
-		// 			script {
-		// 				withEnv(['JIRA_SITE=Release_JIRA']) {
-		// 					def searchResults = jiraJq1Search jql: "PROJECT = ${PROJECT} AND APPLICATION ~ ${APPLICATION} AND Status - \"Verify UAT Deployment\" ORDER BY key DESC"
-							
-		// 					if (searchResults.data.issues.size() < 1) {
-		// 						createjiraticket([
-		// 							'projectKey'		: PROJECT,
-		// 							'branch'			: 'master',
-		// 							'commitID'			: env.GIT_COMMIT,
-		// 							'summary'			: APPLICATTON,
-		// 							'CD Deployment Type': 'CD-Aws',
-		// 							'APP_VERSTON'		: version,
-		// 							'APPLICATION'		: APPLICATION,
-		// 							'Repo URL'			: env.GIT_URL,
-		// 							'Nexus Artifact ID' : 'artifacts',
-		// 							'Nexus Group ID'	: APPLTCATION,
-		// 							'Nexus Repo Name'	: PROJECT,
-		// 						])
-		// 					} else {
-		// 						def key = searchResults.data.issues[0].key
-		// 						def issue = [fields: [customfield_12124: env.GIT_COMMIT, 	// id=customild_12124, name=commitID
-		// 											  customfield_10504: version, ]]		// id customfield_10504, name APP_VERSION
-
-		// 						jiraEditIssue idOrKey: key, issue: issue
-		// 					}
-		// 				}
-		// 			}
-		// 		}
-		// 	}
 	}
 		
-		
-	post {
-		cleanup {
-			cleanWs notFailBuild: true
+	stage('Clean'){
+            steps{
+		script {
+			bat "dotnet clean CourseApi.csproj"
+			echo 'Dev-branch- successfully get cleaned' 
+			}
 		}
 	}
+	
+	stage('Build'){
+            steps{
+		script {
+			build('CourseApi')
+			echo 'Dev-branch- successfully built' 
+			}
+		}
+	}
+    }
 }
 
-
-
-def restore_clean_build (String project) {
+def build(String project){
 	echo "dotnet publish ${project}.csproj -c Release -o ${env.WORKSPACE}/${project}-build"
 	
 	echo "${env.WORKSPACE}/deployment/${project}/"
 	echo "${env.WORKSPACE}/${project}-build"
-
-	bat "dotnet restore "${project}".csproj"
-	echo env.GIT_BRANCH.toLowerCase() + '-branch- successfully get restored' 
-	bat "dotnet clean "${project}".csproj"
-	echo env.GIT_BRANCH.toLowerCase() + '-branch- successfully get cleaned' 
-
+	
 	powershell """
-
-		dotnet publish ${project} -c Release -o ${env.WORKSPACE}/${project}-build
-		
+		dotnet publish ${project}.csproj -c Release -o ${env.WORKSPACE}/${project}-build
 		cp ${env.WORKSPACE}/deployment/${project}/* ${env.WORKSPACE}/${project}-build
+		mkdir ${env.WORKSPACE}/${project}-build/lib
 		
-		// if [ ${project} == PricingWorker ]; then
-		// 	mkdir ${env.WORKSPACE}/${project}-build/lib
-		// 	cp LinuxLibs/* ${env.WORKSPACE}/${project}-build/lib
-		// fi
-		
-		mkdir ${env.WORKSPACE}/build-output/${project}
-
-		tar -vcxf ${env.WORKSPACE}/build-output/${project}/${project}.tar.gz -C ${env.WORKSPACE}/${project}-build .
+		tar -vczf C:/temp/jenkins-build-output/${project}-${BUILD_NUMBER}.tar.gz -c ${env.WORKSPACE}/${project}-build .
 	"""
 }
