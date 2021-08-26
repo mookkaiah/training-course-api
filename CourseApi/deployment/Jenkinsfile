@@ -6,7 +6,8 @@ def version
 def serviceName
 
 pipeline {
-	agent { label 'DOTNET' }
+	// agent { label 'DOTNET' }
+	agent any
 	environment	{
 		DOTNET_ROOT = '/dcifent/dotnet-2.2.105/dotnet'
 		DOTNET_CLI_TELEMETRY_OPTOUT = true
