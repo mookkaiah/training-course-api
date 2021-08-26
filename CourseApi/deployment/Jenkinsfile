@@ -27,7 +27,7 @@ pipeline {
 					version = "${env.GIT_COMMIT[0..6]}-${env.BUILD_NUMBER}"
 					serviceName = env.GIT_URL.replaceFirst(/^.*\/([^\/]+?).git$/, '$1')
 				}
-				addShortText text: 'APP_VERSION: ' + version
+				// addShortText text: 'APP_VERSION: ' + version
 			}
 		}
 		
