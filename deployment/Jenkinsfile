@@ -70,9 +70,14 @@ def restore_clean_build(String project){
 	echo "${env.WORKSPACE}/deployment/${project}/"
 	echo "${env.WORKSPACE}/${project}-build"
 
-	bat "dotnet restore "${project}".csproj"
+	powershell """
+		dotnet restore ${project}.csproj
+	"""
 	echo env.GIT_BRANCH.toLowerCase() + '-branch- successfully get restored' 
-	bat "dotnet clean "${project}".csproj"
+
+	powershell """
+		dotnet clean ${project}.csproj
+	"""
 	echo env.GIT_BRANCH.toLowerCase() + '-branch- successfully get cleaned'
 	
 	powershell """
