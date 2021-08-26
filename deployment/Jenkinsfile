@@ -35,46 +35,53 @@ pipeline {
             }
         }
 	    
-	stage('Restore packages'){
-            steps{
-		script {
-			bat "dotnet restore CourseApi.csproj"
-			echo 'Dev-branch- successfully restored' 
-			}
-		}
-	}
+	// stage('Restore packages'){
+    //         steps{
+	// 	script {
+	// 		bat "dotnet restore CourseApi.csproj"
+	// 		echo 'Dev-branch- successfully restored' 
+	// 		}
+	// 	}
+	// }
 		
-	stage('Clean'){
-            steps{
-		script {
-			bat "dotnet clean CourseApi.csproj"
-			echo 'Dev-branch- successfully get cleaned' 
-			}
-		}
-	}
+	// stage('Clean'){
+    //         steps{
+	// 	script {
+	// 		bat "dotnet clean CourseApi.csproj"
+	// 		echo 'Dev-branch- successfully get cleaned' 
+	// 		}
+	// 	}
+	// }
 	
 	stage('Build'){
             steps{
 		script {
-			build('CourseApi')
-			echo 'Dev-branch- successfully built' 
+				restore_clean_build('CourseApi')
+				echo env.GIT_BRANCH.toLowerCase() + '-branch- successfully built' 
 			}
 		}
 	}
     }
 }
 
-def build(String project){
+def restore_clean_build(String project){
 	echo "dotnet publish ${project}.csproj -c Release -o ${env.WORKSPACE}/${project}-build"
-	
+
 	echo "${env.WORKSPACE}/deployment/${project}/"
 	echo "${env.WORKSPACE}/${project}-build"
+
+	bat "dotnet restore "${project}".csproj"
+	echo env.GIT_BRANCH.toLowerCase() + '-branch- successfully get restored' 
+	bat "dotnet clean "${project}".csproj"
+	echo env.GIT_BRANCH.toLowerCase() + '-branch- successfully get cleaned'
 	
 	powershell """
 		dotnet publish ${project}.csproj -c Release -o ${env.WORKSPACE}/${project}-build
 		cp ${env.WORKSPACE}/deployment/${project}/* ${env.WORKSPACE}/${project}-build
 		mkdir ${env.WORKSPACE}/${project}-build/lib
 		
-		tar -vczf C:/temp/jenkins-build-output/${project}-${BUILD_NUMBER}.tar.gz -c ${env.WORKSPACE}/${project}-build .
+		mkdir ${env.WORKSPACE}/build-output/${project}
+
+		tar -vcxf ${env.WORKSPACE}/build-output/${project}/${project}.tar.gz -C ${env.WORKSPACE}/${project}-build .
 	"""
 }
