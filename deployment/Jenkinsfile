@@ -56,7 +56,7 @@ pipeline {
 	stage('Build'){
             steps{
 				script {
-					restore_clean_build('CourseApi')
+					restore_clean_build('CourseApi.csproj')
 					echo env.GIT_BRANCH.toLowerCase() + '-branch- successfully built' 
 				}
 			}
