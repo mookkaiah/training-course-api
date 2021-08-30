@@ -12,28 +12,28 @@ pipeline {
 	
     stages {
 	stage('Initialize') {
-            steps {
-		script {
+		steps {
+			script {
 
-			echo 'Dev-branch- Jenkinsfile - triggered by web hooks' 
-			version = "${env.GIT_COMMIT[0..6]}-${env.BUILD_NUMBER}"
-			serviceName = env.GIT_URL.replaceFirst(/^.*\/([^\/]+?).git$/, '$1')
-			echo 'version : ' + version
-			echo 'serviceName : ' + serviceName
+				echo 'Dev-branch- Jenkinsfile - triggered by web hooks' 
+				version = "${env.GIT_COMMIT[0..6]}-${env.BUILD_NUMBER}"
+				serviceName = env.GIT_URL.replaceFirst(/^.*\/([^\/]+?).git$/, '$1')
+				echo 'version : ' + version
+				echo 'serviceName : ' + serviceName
+			}
 		}
-            }
-        }
+	}
 		
 	stage('Checkout'){
-            steps {
-		script {
-			echo 'URL : ' +  env.GIT_URL
-			echo 'branch : ' +  env.GIT_BRANCH.toLowerCase()
-			git credentialsId: 'checkoutuser', url: env.GIT_URL, branch: env.GIT_BRANCH.toLowerCase()
-			echo env.GIT_BRANCH.toLowerCase() + ' : Dev-branch- successfully checked out'
+		steps {
+			script {
+				echo 'URL : ' +  env.GIT_URL
+				echo 'branch : ' +  env.GIT_BRANCH.toLowerCase()
+				git credentialsId: 'checkoutuser', url: env.GIT_URL, branch: env.GIT_BRANCH.toLowerCase()
+				echo env.GIT_BRANCH.toLowerCase() + ' : Dev-branch- successfully checked out'
+			}
 		}
-            }
-        }
+	}
 	    
 	// stage('Restore packages'){
     //         steps{
@@ -58,9 +58,9 @@ pipeline {
 				script {
 					restore_clean_build('CourseApi')
 					echo env.GIT_BRANCH.toLowerCase() + '-branch- successfully built' 
+				}
 			}
 		}
-	}
     }
 }
 
