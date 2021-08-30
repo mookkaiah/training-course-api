@@ -56,7 +56,7 @@ pipeline {
 	stage('Build'){
             steps{
 				script {
-					restore_clean_build('CourseApi.csproj')
+					restore_clean_build('CourseApi')
 					echo env.GIT_BRANCH.toLowerCase() + '-branch- successfully built' 
 				}
 			}
@@ -71,17 +71,17 @@ def restore_clean_build(String project){
 	echo "${env.WORKSPACE}/${project}-build"
 
 	powershell """
-		dotnet restore ${project}
+		dotnet restore ${project}.csproj
 	"""
 	echo env.GIT_BRANCH.toLowerCase() + '-branch- successfully get restored' 
 
 	powershell """
-		dotnet clean ${project}
+		dotnet clean ${project}.csproj
 	"""
 	echo env.GIT_BRANCH.toLowerCase() + '-branch- successfully get cleaned'
 	
 	powershell """
-		dotnet publish ${project} -c Release -o ${env.WORKSPACE}/${project}-build
+		dotnet publish ${project}.csproj -c Release -o ${env.WORKSPACE}/${project}-build
 		cp ${env.WORKSPACE}/deployment/${project}/* ${env.WORKSPACE}/${project}-build
 		mkdir ${env.WORKSPACE}/${project}-build/lib
 		
