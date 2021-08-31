@@ -85,7 +85,7 @@ def restore_clean_build(String project){
 		cp ${env.WORKSPACE}/deployment/${project}/* ${env.WORKSPACE}/${project}-build
 		mkdir ${env.WORKSPACE}/${project}-build/lib
 		
-		tar -vczf C:/JenkinsAgent/dotnet/build-output/${project}-${BUILD_NUMBER}.tar.gz -c ${env.WORKSPACE}/${project}-build/ .
+		tar -vczf C:/JenkinsAgent/dotnet/build-output/${project}-${BUILD_NUMBER}.tar.gz -c ${env.WORKSPACE}/${project}-build/* .
 		
 	"""
 }
